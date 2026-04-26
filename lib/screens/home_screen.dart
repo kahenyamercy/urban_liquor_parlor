@@ -4,6 +4,8 @@ import '../config/supabase_config.dart';
 import '../models/product.dart';
 import 'login_screen.dart';
 import 'product_list_screen.dart';
+import '../services/cart_service.dart';
+import 'cart_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -116,46 +118,76 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeader(String email) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
-      color: const Color(0xFF1A1A2E),
-      child: Row(
-        children: [
-          const Icon(Icons.liquor, color: Colors.white, size: 28),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Urban Liquor Parlor',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+Widget _buildHeader(String email) {
+  return Container(
+    padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
+    color: const Color(0xFF1A1A2E),
+    child: Row(
+      children: [
+        const Icon(Icons.liquor, color: Colors.white, size: 28),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Urban Liquor Parlor',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
-                Text(
-                  email,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
-                    fontSize: 12,
-                  ),
+              ),
+              Text(
+                email,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 12,
                 ),
-              ],
+              ),
+            ],
+          ),
+        ),
+        // Cart icon with badge
+        Stack(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.shopping_cart_outlined,
+                  color: Colors.white),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CartScreen()),
+              ).then((_) => setState(() {})),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white, size: 20),
-            onPressed: _signOut,
-            tooltip: 'Sign out',
-          ),
-        ],
-      ),
-    );
-  }
-
+            if (CartService().totalItems > 0)
+              Positioned(
+                right: 6, top: 6,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '${CartService().totalItems}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        IconButton(
+          icon: const Icon(Icons.logout, color: Colors.white, size: 20),
+          onPressed: _signOut,
+          tooltip: 'Sign out',
+        ),
+      ],
+    ),
+  );
+}
   Widget _buildSearchBar() {
     return Container(
       color: const Color(0xFF1A1A2E),

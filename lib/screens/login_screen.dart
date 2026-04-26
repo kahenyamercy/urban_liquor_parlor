@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/supabase_config.dart';
 import 'home_screen.dart';
+import 'admin/admin_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,9 +13,9 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
+  final _emailController    = TextEditingController();
   final _passwordController = TextEditingController();
-  final _nameController = TextEditingController();
+  final _nameController     = TextEditingController();
   bool _isLogin = true;
   bool _loading = false;
   String? _error;
@@ -42,22 +43,48 @@ class _LoginScreenState extends State<LoginScreen> {
           password: _passwordController.text.trim(),
         );
         if (response.user != null) {
-          await supabase.from('profiles').insert({
-            'id': response.user!.id,
+          // upsert — safe even if the row already exists
+          await supabase.from('profiles').upsert({
+            'id':        response.user!.id,
             'full_name': _nameController.text.trim(),
-            'role': 'customer',
+            'role':      'customer',
           });
+          print('✅ Profile saved for: ${response.user!.id}');
         }
       }
 
+      final userId = supabase.auth.currentUser!.id;
+      print('🔍 Looking up profile for: $userId');
+
+      // maybeSingle() returns null instead of throwing if no row found
+      final profile = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', userId)
+          .maybeSingle();
+
+      final role = profile?['role'] as String? ?? 'customer';
+      print('✅ Logged in. Role: $role');
+
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+
+      if (role == 'admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
+
     } on AuthException catch (e) {
+      print('❌ Auth error: ${e.message}');
       setState(() => _error = e.message);
     } catch (e) {
+      print('❌ Unexpected error: $e');
       setState(() => _error = 'Something went wrong. Please try again.');
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -79,7 +106,8 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
-        prefixIcon: Icon(icon, color: Colors.white.withValues(alpha: 0.5), size: 20),
+        prefixIcon:
+            Icon(icon, color: Colors.white.withValues(alpha: 0.5), size: 20),
         filled: true,
         fillColor: Colors.white.withValues(alpha: 0.08),
         border: OutlineInputBorder(
@@ -88,7 +116,8 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
+          borderSide:
+              BorderSide(color: Colors.white.withValues(alpha: 0.4)),
         ),
       ),
     );
@@ -107,6 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const Icon(Icons.liquor, color: Colors.white, size: 36),
                 const SizedBox(height: 24),
+
                 Text(
                   _isLogin ? 'Welcome back' : 'Create account',
                   style: const TextStyle(
@@ -117,22 +147,37 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _isLogin ? 'Sign in to continue' : 'Sign up to start ordering',
+                  _isLogin
+                      ? 'Sign in to continue'
+                      : 'Sign up to start ordering',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55), fontSize: 15),
+                      color: Colors.white.withValues(alpha: 0.55),
+                      fontSize: 15),
                 ),
                 const SizedBox(height: 36),
 
+                // Name field — register only
                 if (!_isLogin) ...[
-                  _buildField(_nameController, 'Full name', Icons.person_outline),
+                  _buildField(
+                      _nameController, 'Full name', Icons.person_outline),
                   const SizedBox(height: 14),
                 ],
-                _buildField(_emailController, 'Email', Icons.email_outlined,
-                    keyboardType: TextInputType.emailAddress),
-                const SizedBox(height: 14),
-                _buildField(_passwordController, 'Password', Icons.lock_outline,
-                    obscure: true),
 
+                _buildField(
+                  _emailController,
+                  'Email',
+                  Icons.email_outlined,
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 14),
+                _buildField(
+                  _passwordController,
+                  'Password',
+                  Icons.lock_outline,
+                  obscure: true,
+                ),
+
+                // Error message
                 if (_error != null) ...[
                   const SizedBox(height: 16),
                   Container(
@@ -141,14 +186,26 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: Colors.red.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text(_error!,
-                        style: const TextStyle(
-                            color: Colors.redAccent, fontSize: 13)),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline,
+                            color: Colors.redAccent, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _error!,
+                            style: const TextStyle(
+                                color: Colors.redAccent, fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
 
                 const SizedBox(height: 28),
 
+                // Submit button
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
@@ -165,18 +222,21 @@ class _LoginScreenState extends State<LoginScreen> {
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Color(0xFF1A1A2E)),
+                                strokeWidth: 2,
+                                color: Color(0xFF1A1A2E)),
                           )
                         : Text(
                             _isLogin ? 'Sign in' : 'Create account',
                             style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w600),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600),
                           ),
                   ),
                 ),
 
                 const SizedBox(height: 20),
 
+                // Toggle login / register
                 Center(
                   child: TextButton(
                     onPressed: () => setState(() {
@@ -188,7 +248,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? "Don't have an account? Register"
                           : 'Already have an account? Sign in',
                       style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7), fontSize: 14),
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 14),
                     ),
                   ),
                 ),
