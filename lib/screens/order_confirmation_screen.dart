@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'order_tracking_screen.dart';
+import 'order_history_screen.dart';
 
 class OrderConfirmationScreen extends StatelessWidget {
   final String orderId;
@@ -27,8 +28,11 @@ class OrderConfirmationScreen extends StatelessWidget {
                   color: Color(0xFFECFDF5),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_rounded,
-                    size: 56, color: Color(0xFF059669)),
+                child: const Icon(
+                  Icons.check_rounded,
+                  size: 56,
+                  color: Color(0xFF059669),
+                ),
               ),
               const SizedBox(height: 28),
 
@@ -49,7 +53,9 @@ class OrderConfirmationScreen extends StatelessWidget {
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 8),
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF8F8F8),
                   borderRadius: BorderRadius.circular(8),
@@ -80,30 +86,56 @@ class OrderConfirmationScreen extends StatelessWidget {
                     backgroundColor: const Color(0xFF1A1A2E),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  child: const Text('Track my order',
-                      style: TextStyle(fontSize: 16)),
+                  child: const Text(
+                    'Track my order',
+                    style: TextStyle(fontSize: 16),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
 
               // Back to home
+              // Replace the OutlinedButton at the bottom with this
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton(
+                child: OutlinedButton.icon(
                   onPressed: () => Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (_) => const HomeScreen()),
                     (_) => false,
                   ),
+                  icon: const Icon(Icons.home_outlined, size: 18),
+                  label: const Text(
+                    'Back to home',
+                    style: TextStyle(fontSize: 16),
+                  ),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  child: const Text('Back to home',
-                      style: TextStyle(fontSize: 16)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: () => Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const OrderHistoryScreen(),
+                    ),
+                    (_) => false,
+                  ),
+                  icon: const Icon(Icons.history, size: 18),
+                  label: const Text(
+                    'View order history',
+                    style: TextStyle(fontSize: 15),
+                  ),
                 ),
               ),
             ],

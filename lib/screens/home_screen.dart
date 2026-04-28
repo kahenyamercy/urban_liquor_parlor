@@ -5,6 +5,7 @@ import '../models/product.dart';
 import 'login_screen.dart';
 import 'product_list_screen.dart';
 import '../services/cart_service.dart';
+import 'order_history_screen.dart';
 import 'cart_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -147,6 +148,17 @@ Widget _buildHeader(String email) {
               ),
             ],
           ),
+        ),
+        // Order history button — add this inside the Row in _buildHeader
+        IconButton(
+          icon: const Icon(Icons.history, color: Colors.white),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const OrderHistoryScreen()),
+            );
+          },
+          tooltip: 'Order history',
         ),
         // Cart icon with badge
         Stack(

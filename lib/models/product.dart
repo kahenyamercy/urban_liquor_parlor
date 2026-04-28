@@ -17,13 +17,15 @@ class Product {
 
   // Convert Supabase row (a Map) into a Product object
   factory Product.fromMap(Map<String, dynamic> map) {
-    return Product(
-      id:       map['id'].toString(),
-      name:     map['name'] as String,
-      category: map['category'] as String,
-      price:    (map['price'] as num).toDouble(),
-      stock:    map['stock'] as int,
-      imageUrl: map['image_url'] as String?,
-    );
+  // Treat empty string as null for imageUrl
+  final rawUrl = map['image_url'] as String?;
+  return Product(
+    id:       map['id'].toString(),
+    name:     map['name'] as String,
+    category: map['category'] as String,
+    price:    (map['price'] as num).toDouble(),
+    stock:    map['stock'] as int,
+    imageUrl: (rawUrl != null && rawUrl.isNotEmpty) ? rawUrl : null,
+  );
   }
 }

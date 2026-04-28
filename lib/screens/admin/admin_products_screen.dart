@@ -55,28 +55,29 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
     );
   }
 
-  Future<void> _deleteProduct(String id) async {
+  Future<void> _deleteProduct(Product product) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Delete product'),
-        content: const Text(
-            'Are you sure you want to delete this product?'),
+        content: Text('Delete "${product.name}"? This cannot be undone.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Delete',
-                  style: TextStyle(color: Colors.red))),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete',
+                style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
 
     if (confirm == true) {
       try {
-        await supabase.from('products').delete().eq('id', id);
+        await supabase.from('products').delete().eq('id', product.id);
         _loadProducts();
       } catch (e) {
         if (mounted) {
@@ -108,23 +109,27 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
               child: CircularProgressIndicator(color: Color(0xFF1A1A2E)))
           : RefreshIndicator(
               onRefresh: _loadProducts,
-              child: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                itemCount: _products.length,
-                itemBuilder: (context, index) =>
-                    _buildProductRow(_products[index]),
-              ),
+              child: _products.isEmpty
+                  ? const Center(
+                      child: Text('No products yet. Tap + to add.',
+                          style: TextStyle(color: Colors.grey)))
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                      itemCount: _products.length,
+                      itemBuilder: (context, index) =>
+                          _buildProductRow(_products[index]),
+                    ),
             ),
     );
   }
 
   Widget _buildProductRow(Product product) {
-    final isLowStock = product.stock <= 5;
+    final isLowStock   = product.stock > 0 && product.stock <= 5;
     final isOutOfStock = product.stock == 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -138,15 +143,10 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
       ),
       child: Row(
         children: [
-          // Category dot
-          Container(
-            width: 44, height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A2E).withOpacity(0.06),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.liquor,
-                color: Colors.grey, size: 22),
+          // Product image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: _buildProductImage(product.imageUrl, size: 52),
           ),
           const SizedBox(width: 12),
 
@@ -198,7 +198,7 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
             ),
           ),
 
-          // Price
+          // Price + action buttons
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -208,30 +208,16 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  GestureDetector(
+                  _iconBtn(
+                    icon: Icons.edit_outlined,
+                    color: const Color(0xFF6366F1),
                     onTap: () => _openProductForm(product: product),
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6366F1).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Icon(Icons.edit_outlined,
-                          size: 16, color: Color(0xFF6366F1)),
-                    ),
                   ),
                   const SizedBox(width: 6),
-                  GestureDetector(
-                    onTap: () => _deleteProduct(product.id),
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Icon(Icons.delete_outline,
-                          size: 16, color: Colors.red),
-                    ),
+                  _iconBtn(
+                    icon: Icons.delete_outline,
+                    color: Colors.red,
+                    onTap: () => _deleteProduct(product),
                   ),
                 ],
               ),
@@ -241,10 +227,58 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
       ),
     );
   }
+
+  Widget _buildProductImage(String? url, {required double size}) {
+    if (url != null && url.isNotEmpty) {
+      return Image.network(
+        url,
+        width: size, height: size,
+        fit: BoxFit.cover,
+        loadingBuilder: (_, child, progress) {
+          if (progress == null) return child;
+          return Container(
+            width: size, height: size,
+            color: const Color(0xFF1A1A2E).withValues(alpha: 0.06),
+            child: const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        },
+        errorBuilder: (_, __, ___) => _placeholder(size),
+      );
+    }
+    return _placeholder(size);
+  }
+
+  Widget _placeholder(double size) {
+    return Container(
+      width: size, height: size,
+      color: const Color(0xFF1A1A2E).withValues(alpha: 0.06),
+      child: const Icon(Icons.liquor, color: Colors.grey, size: 24),
+    );
+  }
+
+  Widget _iconBtn({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(icon, size: 16, color: color),
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Product add/edit form sheet
+// Product form — URL-based image input
 // ─────────────────────────────────────────────────────────────────────────────
 class ProductFormSheet extends StatefulWidget {
   final Product? product;
@@ -257,12 +291,14 @@ class ProductFormSheet extends StatefulWidget {
 }
 
 class _ProductFormSheetState extends State<ProductFormSheet> {
-  final _nameController    = TextEditingController();
-  final _priceController   = TextEditingController();
-  final _stockController   = TextEditingController();
-  final _imageController   = TextEditingController();
+  final _nameController     = TextEditingController();
+  final _priceController    = TextEditingController();
+  final _stockController    = TextEditingController();
+  final _imageUrlController = TextEditingController();
   String _category = 'Beer';
   bool _saving = false;
+  bool _previewingImage = false;
+  String? _previewUrl;
 
   final List<String> _categories = [
     'Beer', 'Whiskey', 'Wine', 'Spirits', 'Cider', 'Water', 'Soda'
@@ -271,15 +307,30 @@ class _ProductFormSheetState extends State<ProductFormSheet> {
   @override
   void initState() {
     super.initState();
-    // Pre-fill if editing
     if (widget.product != null) {
       final p = widget.product!;
-      _nameController.text  = p.name;
-      _priceController.text = p.price.toStringAsFixed(0);
-      _stockController.text = p.stock.toString();
-      _imageController.text = p.imageUrl ?? '';
-      _category = p.category;
+      _nameController.text     = p.name;
+      _priceController.text    = p.price.toStringAsFixed(0);
+      _stockController.text    = p.stock.toString();
+      _imageUrlController.text = p.imageUrl ?? '';
+      _category = _categories.contains(p.category) ? p.category : 'Beer';
+      if (p.imageUrl != null && p.imageUrl!.isNotEmpty) {
+        _previewUrl = p.imageUrl;
+        _previewingImage = true;
+      }
     }
+
+    // Live preview as admin types the URL
+    _imageUrlController.addListener(_onUrlChanged);
+  }
+
+  void _onUrlChanged() {
+    final url = _imageUrlController.text.trim();
+    final isValidUrl = url.startsWith('http://') || url.startsWith('https://');
+    setState(() {
+      _previewUrl = isValidUrl ? url : null;
+      _previewingImage = isValidUrl;
+    });
   }
 
   @override
@@ -287,7 +338,7 @@ class _ProductFormSheetState extends State<ProductFormSheet> {
     _nameController.dispose();
     _priceController.dispose();
     _stockController.dispose();
-    _imageController.dispose();
+    _imageUrlController.dispose();
     super.dispose();
   }
 
@@ -295,10 +346,12 @@ class _ProductFormSheetState extends State<ProductFormSheet> {
     final name  = _nameController.text.trim();
     final price = double.tryParse(_priceController.text.trim());
     final stock = int.tryParse(_stockController.text.trim());
+    final imageUrl = _imageUrlController.text.trim();
 
     if (name.isEmpty || price == null || stock == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in name, price and stock')),
+        const SnackBar(
+            content: Text('Please fill in name, price and stock')),
       );
       return;
     }
@@ -311,17 +364,14 @@ class _ProductFormSheetState extends State<ProductFormSheet> {
         'category':  _category,
         'price':     price,
         'stock':     stock,
-        'image_url': _imageController.text.trim().isEmpty
-            ? null
-            : _imageController.text.trim(),
+        // Save null if URL is empty — never save empty string
+        'image_url': imageUrl.isNotEmpty ? imageUrl : null,
       };
 
       if (widget.product == null) {
-        // Insert new product
         await supabase.from('products').insert(data);
         print('✅ Product added: $name');
       } else {
-        // Update existing product
         await supabase
             .from('products')
             .update(data)
@@ -353,81 +403,177 @@ class _ProductFormSheetState extends State<ProductFormSheet> {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Handle bar
-          Center(
-            child: Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          Text(
-            isEdit ? 'Edit product' : 'Add product',
-            style: const TextStyle(
-                fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
+            Text(
+              isEdit ? 'Edit product' : 'Add product',
+              style: const TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
 
-          _field(_nameController,  'Product name', TextInputType.text),
-          const SizedBox(height: 12),
-
-          // Category dropdown
-          DropdownButtonFormField<String>(
-            value: _category,
-            decoration: _inputDecoration('Category'),
-            items: _categories.map((c) =>
-                DropdownMenuItem(value: c, child: Text(c))).toList(),
-            onChanged: (v) => setState(() => _category = v!),
-          ),
-          const SizedBox(height: 12),
-
-          Row(
-            children: [
-              Expanded(
-                child: _field(_priceController, 'Price (KES)',
-                    TextInputType.number),
+            // ── Image preview ────────────────────────────────────────────
+            if (_previewingImage && _previewUrl != null) ...[
+              Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    _previewUrl!,
+                    height: 140,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (_, child, progress) {
+                      if (progress == null) return child;
+                      return Container(
+                        height: 140,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    },
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.red.shade200),
+                      ),
+                      child: const Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.broken_image_outlined,
+                                color: Colors.red, size: 20),
+                            SizedBox(width: 8),
+                            Text('Could not load image',
+                                style: TextStyle(
+                                    color: Colors.red, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _field(_stockController, 'Stock qty',
-                    TextInputType.number),
-              ),
+              const SizedBox(height: 12),
             ],
-          ),
-          const SizedBox(height: 12),
 
-          _field(_imageController, 'Image URL (optional)',
-              TextInputType.url),
-          const SizedBox(height: 20),
-
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _saving ? null : _save,
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF1A1A2E),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+            // ── Image URL field ──────────────────────────────────────────
+            TextField(
+              controller: _imageUrlController,
+              keyboardType: TextInputType.url,
+              decoration: InputDecoration(
+                labelText: 'Image URL (paste from Google Images)',
+                hintText: 'https://example.com/image.jpg',
+                hintStyle: const TextStyle(fontSize: 12),
+                prefixIcon: const Icon(Icons.image_outlined, size: 20),
+                suffixIcon: _imageUrlController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        onPressed: () {
+                          _imageUrlController.clear();
+                          setState(() {
+                            _previewUrl = null;
+                            _previewingImage = false;
+                          });
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: const Color(0xFFF8F8F8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 14),
               ),
-              child: _saving
-                  ? const SizedBox(
-                      height: 20, width: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
-                  : Text(isEdit ? 'Save changes' : 'Add product',
-                      style: const TextStyle(fontSize: 16)),
             ),
-          ),
-        ],
+
+            // Hint text for finding images
+            Padding(
+              padding: const EdgeInsets.only(top: 6, left: 4, bottom: 16),
+              child: Text(
+                'Tip: Google the product → Images → right-click → Copy image address',
+                style: TextStyle(
+                    fontSize: 11, color: Colors.grey.shade500),
+              ),
+            ),
+
+            _field(_nameController, 'Product name', TextInputType.text),
+            const SizedBox(height: 12),
+
+            DropdownButtonFormField<String>(
+              value: _category,
+              decoration: _inputDecoration('Category'),
+              items: _categories
+                  .map((c) =>
+                      DropdownMenuItem(value: c, child: Text(c)))
+                  .toList(),
+              onChanged: _saving ? null : (v) => setState(() => _category = v!),
+            ),
+            const SizedBox(height: 12),
+
+            Row(
+              children: [
+                Expanded(
+                  child: _field(_priceController, 'Price (KES)',
+                      TextInputType.number),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _field(_stockController, 'Stock qty',
+                      TextInputType.number),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: _saving ? null : _save,
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A1A2E),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: _saving
+                    ? const SizedBox(
+                        height: 20, width: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : Text(
+                        isEdit ? 'Save changes' : 'Add product',
+                        style: const TextStyle(fontSize: 16)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
