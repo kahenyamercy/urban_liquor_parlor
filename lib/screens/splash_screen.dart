@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../config/supabase_config.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
+import 'admin/admin_dashboard_screen.dart';
+import 'rider/rider_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -23,12 +25,41 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     final session = supabase.auth.currentSession;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => session != null ? const HomeScreen() : const LoginScreen(),
-      ),
-    );
+    if (session == null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+      return;
+    }
+
+    // Check role for existing session
+    final profile = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+    final role = profile?['role'] as String? ?? 'customer';
+
+    if (!mounted) return;
+
+    if (role == 'admin') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+      );
+    } else if (role == 'rider') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const RiderScreen()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    }
   }
 
   @override
@@ -67,7 +98,10 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
             const SizedBox(height: 48),
-            const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+            const CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2,
+            ),
           ],
         ),
       ),

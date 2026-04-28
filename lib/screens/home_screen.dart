@@ -208,11 +208,11 @@ Widget _buildHeader(String email) {
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           hintText: 'Search products...',
-          hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
+          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
           prefixIcon:
-              Icon(Icons.search, color: Colors.white.withOpacity(0.5), size: 20),
+              Icon(Icons.search, color: Colors.white.withValues(alpha: 0.5), size: 20),
           filled: true,
-          fillColor: Colors.white.withOpacity(0.1),
+          fillColor: Colors.white.withValues(alpha: 0.1),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -320,7 +320,7 @@ Widget _buildHeader(String email) {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: Colors.white, size: 28),
@@ -339,7 +339,7 @@ Widget _buildHeader(String email) {
                 Text(
                   'View all',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 12,
                   ),
                 ),
