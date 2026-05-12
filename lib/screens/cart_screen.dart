@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../config/supabase_config.dart';
 import '../services/cart_service.dart';
 import 'order_confirmation_screen.dart';
+import 'mpesa_payment_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -25,80 +26,82 @@ class _CartScreenState extends State<CartScreen> {
 
   void _refresh() => setState(() {});
 
-  Future<void> _placeOrder() async {
-    if (_isDelivery && _addressController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your delivery address')),
-      );
-      return;
-    }
-
-    if (_cart.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Your cart is empty')),
-      );
-      return;
-    }
-
-    setState(() => _placingOrder = true);
-
-    try {
-      final user = supabase.auth.currentUser;
-      if (user == null) throw Exception('Not logged in');
-
-      print('🛒 Placing order for user: ${user.id}');
-
-      // Step 1 — insert the order
-      final orderResponse = await supabase
-          .from('orders')
-          .insert({
-            'customer_id': user.id,
-            'total': _cart.totalPrice,
-            'status': 'received',
-            'delivery_address': _isDelivery
-                ? _addressController.text.trim()
-                : 'Pickup',
-          })
-          .select()
-          .single();
-
-      final orderId = orderResponse['id'].toString();
-      print('✅ Order created: $orderId');
-
-      // Step 2 — insert each order item
-      final orderItems = _cart.items.map((item) => {
-        'order_id': orderId,
-        'product_id': item.product.id,
-        'quantity': item.quantity,
-        'unit_price': item.product.price,
-      }).toList();
-
-      await supabase.from('order_items').insert(orderItems);
-      print('✅ Order items saved: ${orderItems.length} items');
-
-      // Step 3 — clear cart
-      _cart.clear();
-
-      if (!mounted) return;
-
-      // Step 4 — navigate to confirmation
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => OrderConfirmationScreen(orderId: orderId),
-        ),
-      );
-    } catch (e) {
-      print('❌ Order failed: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Order failed: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _placingOrder = false);
-    }
+ Future<void> _placeOrder() async {
+  if (_isDelivery && _addressController.text.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please enter your delivery address')),
+    );
+    return;
   }
+
+  if (_cart.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Your cart is empty')),
+    );
+    return;
+  }
+
+  setState(() => _placingOrder = true);
+
+  try {
+    final user = supabase.auth.currentUser;
+    if (user == null) throw Exception('Not logged in');
+
+    print('🛒 Creating order for user: ${user.id}');
+
+    final orderResponse = await supabase
+        .from('orders')
+        .insert({
+          'customer_id':      user.id,
+          'total':            _cart.totalPrice,
+          'status':           'received',
+          'payment_status':   'unpaid',
+          'delivery_address': _isDelivery
+              ? _addressController.text.trim()
+              : 'Pickup',
+        })
+        .select()
+        .single();
+
+    final orderId = orderResponse['id'].toString();
+    print('✅ Order created: $orderId');
+
+    final orderItems = _cart.items.map((item) => {
+      'order_id':   orderId,
+      'product_id': item.product.id,
+      'quantity':   item.quantity,
+      'unit_price': item.product.price,
+    }).toList();
+
+    await supabase.from('order_items').insert(orderItems);
+    print('✅ Order items saved');
+
+    final amount = _cart.totalPrice;
+    _cart.clear();
+
+    if (!mounted) return;
+
+    // Go to M-Pesa payment screen
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MpesaPaymentScreen(
+          orderId: orderId,
+          amount:  amount,
+        ),
+      ),
+    );
+  } catch (e) {
+    print('❌ Order failed: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Order failed: $e')),
+      );
+    }
+  } finally {
+    if (mounted) setState(() => _placingOrder = false);
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -119,11 +122,16 @@ class _CartScreenState extends State<CartScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.shopping_cart_outlined,
-              size: 64, color: Colors.grey),
+          const Icon(
+            Icons.shopping_cart_outlined,
+            size: 64,
+            color: Colors.grey,
+          ),
           const SizedBox(height: 16),
-          const Text('Your cart is empty',
-              style: TextStyle(fontSize: 16, color: Colors.grey)),
+          const Text(
+            'Your cart is empty',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
@@ -156,9 +164,13 @@ class _CartScreenState extends State<CartScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Fulfilment method',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15)),
+                    const Text(
+                      'Fulfilment method',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -224,8 +236,10 @@ class _CartScreenState extends State<CartScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('${_cart.totalItems} items',
-                      style: const TextStyle(color: Colors.grey)),
+                  Text(
+                    '${_cart.totalItems} items',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
                   Text(
                     'KES ${_cart.totalPrice.toStringAsFixed(0)}',
                     style: const TextStyle(
@@ -245,15 +259,22 @@ class _CartScreenState extends State<CartScreen> {
                     backgroundColor: const Color(0xFF1A1A2E),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: _placingOrder
                       ? const SizedBox(
-                          height: 20, width: 20,
+                          height: 20,
+                          width: 20,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : const Text('Place order',
-                          style: TextStyle(fontSize: 16)),
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Place order',
+                          style: TextStyle(fontSize: 16),
+                        ),
                 ),
               ),
             ],
@@ -291,8 +312,10 @@ class _CartScreenState extends State<CartScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.product.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  item.product.name,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
                 Text(
                   'KES ${item.product.price.toStringAsFixed(0)} each',
                   style: const TextStyle(color: Colors.grey, fontSize: 12),
@@ -313,8 +336,10 @@ class _CartScreenState extends State<CartScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text('${item.quantity}',
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(
+                  '${item.quantity}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
               _smallButton(
                 icon: Icons.add,
@@ -349,37 +374,31 @@ class _CartScreenState extends State<CartScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFF1A1A2E)
-              : const Color(0xFFF8F8F8),
+          color: selected ? const Color(0xFF1A1A2E) : const Color(0xFFF8F8F8),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected
-                ? const Color(0xFF1A1A2E)
-                : Colors.grey.shade300,
+            color: selected ? const Color(0xFF1A1A2E) : Colors.grey.shade300,
           ),
         ),
         child: Column(
           children: [
-            Icon(icon,
-                color: selected ? Colors.white : Colors.grey, size: 22),
+            Icon(icon, color: selected ? Colors.white : Colors.grey, size: 22),
             const SizedBox(height: 4),
-            Text(label,
-                style: TextStyle(
-                  color: selected ? Colors.white : Colors.grey,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                )),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? Colors.white : Colors.grey,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _smallButton({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
+  Widget _smallButton({required IconData icon, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
