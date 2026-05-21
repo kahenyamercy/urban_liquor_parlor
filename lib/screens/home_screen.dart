@@ -1,3 +1,5 @@
+// ignore_for_file: unused_import
+
 import 'package:flutter/material.dart';
 
 import '../config/supabase_config.dart';
@@ -27,8 +29,8 @@ class _HomeScreenState extends State<HomeScreen> {
     'Wine':     Icons.wine_bar,
     'Spirits':  Icons.liquor,
     'Cider':    Icons.emoji_food_beverage,
-    'Water':    Icons.water_drop,
-    'Soda':     Icons.bubble_chart,
+    'Mixers':    Icons.water_drop,
+    'Non Alcoholic':     Icons.local_drink,
   };
 
   // Category colors
@@ -38,8 +40,8 @@ class _HomeScreenState extends State<HomeScreen> {
     'Wine':     const Color(0xFF7C3AED),
     'Spirits':  const Color(0xFF0F766E),
     'Cider':    const Color(0xFF65A30D),
-    'Water':    const Color(0xFF0284C7),
-    'Soda':     const Color(0xFFDB2777),
+    'Mixers':    const Color(0xFF0284C7),
+    'Non Alcoholic':     const Color(0xFFDB2777),
   };
 
   @override

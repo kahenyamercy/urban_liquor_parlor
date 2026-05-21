@@ -63,7 +63,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
               if (_cart.totalItems > 0)
                 Positioned(
-                  right: 6, top: 6,
+                  right: 6,
+                  top: 6,
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
@@ -73,9 +74,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     child: Text(
                       '${_cart.totalItems}',
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold),
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -91,12 +93,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             width: double.infinity,
             color: const Color(0xFF1A1A2E).withValues(alpha: 0.05),
             child: product.imageUrl != null
-                ? Image.network(product.imageUrl!, fit: BoxFit.cover,
+                ? Image.network(
+                    product.imageUrl!,
+                    fit: BoxFit.cover,
+                    // ignore: unnecessary_underscores
                     errorBuilder: (_, __, ___) => const Center(
                       child: Icon(Icons.liquor, size: 80, color: Colors.grey),
-                    ))
+                    ),
+                  )
                 : const Center(
-                    child: Icon(Icons.liquor, size: 80, color: Colors.grey)),
+                    child: Icon(Icons.liquor, size: 80, color: Colors.grey),
+                  ),
           ),
 
           Expanded(
@@ -136,14 +143,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   // Category badge
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF1A1A2E).withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(product.category,
-                        style: const TextStyle(
-                            fontSize: 13, color: Color(0xFF1A1A2E))),
+                    child: Text(
+                      product.category,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF1A1A2E),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
 
@@ -162,9 +175,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                   // Quantity selector
                   if (!outOfStock) ...[
-                    const Text('Quantity',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 15)),
+                    const Text(
+                      'Quantity',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
                     const SizedBox(height: 10),
                     Row(
                       children: [
@@ -181,7 +198,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           child: Text(
                             '$_quantity',
                             style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         _quantityButton(
@@ -215,7 +234,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         backgroundColor: const Color(0xFF1A1A2E),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       icon: const Icon(Icons.shopping_cart_outlined),
                       label: Text(

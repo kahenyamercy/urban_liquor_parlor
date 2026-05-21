@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../config/supabase_config.dart';
 import 'home_screen.dart';
-import 'login_screen.dart';
+import 'age_check_screen.dart';
 import 'admin/admin_dashboard_screen.dart';
 import 'rider/rider_screen.dart';
 
@@ -28,7 +28,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (session == null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        MaterialPageRoute(builder: (_) => const AgeGateScreen()),
       );
       return;
     }

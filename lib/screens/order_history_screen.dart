@@ -16,17 +16,17 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   String? _error;
 
   final Map<String, Color> _statusColors = {
-    'received':         const Color(0xFF6366F1),
-    'confirmed':        const Color(0xFFF59E0B),
+    'received': const Color(0xFF6366F1),
+    'confirmed': const Color(0xFFF59E0B),
     'out_for_delivery': const Color(0xFF0284C7),
-    'delivered':        const Color(0xFF059669),
+    'delivered': const Color(0xFF059669),
   };
 
   final Map<String, IconData> _statusIcons = {
-    'received':         Icons.receipt_long_outlined,
-    'confirmed':        Icons.check_circle_outline,
+    'received': Icons.receipt_long_outlined,
+    'confirmed': Icons.check_circle_outline,
     'out_for_delivery': Icons.delivery_dining,
-    'delivered':        Icons.home_outlined,
+    'delivered': Icons.home_outlined,
   };
 
   @override
@@ -73,11 +73,21 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   String _formatDate(String isoString) {
     final date = DateTime.parse(isoString).toLocal();
     const months = [
-      'Jan','Feb','Mar','Apr','May','Jun',
-      'Jul','Aug','Sep','Oct','Nov','Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final hour = date.hour.toString().padLeft(2, '0');
-    final min  = date.minute.toString().padLeft(2, '0');
+    final min = date.minute.toString().padLeft(2, '0');
     return '${date.day} ${months[date.month - 1]} ${date.year} · $hour:$min';
   }
 
@@ -93,20 +103,21 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF1A1A2E)))
+              child: CircularProgressIndicator(color: Color(0xFF1A1A2E)),
+            )
           : _error != null
-              ? _buildError()
-              : _orders.isEmpty
-                  ? _buildEmpty()
-                  : RefreshIndicator(
-                      onRefresh: _loadOrders,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _orders.length,
-                        itemBuilder: (context, index) =>
-                            _buildOrderCard(_orders[index]),
-                      ),
-                    ),
+          ? _buildError()
+          : _orders.isEmpty
+          ? _buildEmpty()
+          : RefreshIndicator(
+              onRefresh: _loadOrders,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _orders.length,
+                itemBuilder: (context, index) =>
+                    _buildOrderCard(_orders[index]),
+              ),
+            ),
     );
   }
 
@@ -121,7 +132,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              setState(() { _loading = true; _error = null; });
+              setState(() {
+                _loading = true;
+                _error = null;
+              });
               _loadOrders();
             },
             child: const Text('Retry'),
@@ -137,23 +151,32 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 80, height: 80,
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
               color: const Color(0xFF1A1A2E).withValues(alpha: 0.06),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.receipt_long_outlined,
-                size: 40, color: Colors.grey),
+            child: const Icon(
+              Icons.receipt_long_outlined,
+              size: 40,
+              color: Colors.grey,
+            ),
           ),
           const SizedBox(height: 16),
-          const Text('No orders yet',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF1A1A2E))),
+          const Text(
+            'No orders yet',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF1A1A2E),
+            ),
+          ),
           const SizedBox(height: 6),
-          const Text('Your past orders will appear here',
-              style: TextStyle(color: Colors.grey, fontSize: 13)),
+          const Text(
+            'Your past orders will appear here',
+            style: TextStyle(color: Colors.grey, fontSize: 13),
+          ),
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
@@ -161,9 +184,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               backgroundColor: const Color(0xFF1A1A2E),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 24, vertical: 12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
             child: const Text('Browse products'),
           ),
@@ -173,15 +196,15 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   }
 
   Widget _buildOrderCard(Map<String, dynamic> order) {
-    final id       = order['id'].toString().substring(0, 8).toUpperCase();
-    final status   = order['status'] as String;
-    final total    = (order['total'] as num).toDouble();
-    final address  = order['delivery_address'] as String? ?? '';
-    final date     = _formatDate(order['created_at'] as String);
-    final items    = order['items'] as List? ?? [];
+    final id = order['id'].toString().substring(0, 8).toUpperCase();
+    final status = order['status'] as String;
+    final total = (order['total'] as num).toDouble();
+    final address = order['delivery_address'] as String? ?? '';
+    final date = _formatDate(order['created_at'] as String);
+    final items = order['items'] as List? ?? [];
     final isDelivery = address != 'Pickup';
-    final color    = _statusColors[status] ?? Colors.grey;
-    final icon     = _statusIcons[status]  ?? Icons.receipt_long_outlined;
+    final color = _statusColors[status] ?? Colors.grey;
+    final icon = _statusIcons[status] ?? Icons.receipt_long_outlined;
     final isActive = status != 'delivered';
 
     return Container(
@@ -200,7 +223,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               children: [
                 // Status icon
                 Container(
-                  width: 42, height: 42,
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
@@ -223,9 +247,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(date,
-                          style: const TextStyle(
-                              color: Colors.grey, fontSize: 12)),
+                      Text(
+                        date,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -233,7 +261,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                 // Status badge
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -241,9 +271,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                   child: Text(
                     status.replaceAll('_', ' '),
                     style: TextStyle(
-                        color: color,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600),
+                      color: color,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -257,26 +288,31 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
             child: Column(
-              children: (items as List).map<Widget>((item) {
+              children: (items).map<Widget>((item) {
                 final name = (item['products'] as Map?)?['name'] ?? 'Product';
-                final qty  = item['quantity'] as int;
+                final qty = item['quantity'] as int;
                 final price = (item['unit_price'] as num).toDouble();
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
                     children: [
-                      Text('${qty}×',
-                          style: const TextStyle(
-                              color: Colors.grey, fontSize: 13)),
+                      Text(
+                        '${qty}×',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
-                          child: Text(name,
-                              style: const TextStyle(fontSize: 13))),
+                        child: Text(name, style: const TextStyle(fontSize: 13)),
+                      ),
                       Text(
                         'KES ${(price * qty).toStringAsFixed(0)}',
                         style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -293,14 +329,14 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                 // Delivery info
                 Icon(
                   isDelivery ? Icons.delivery_dining : Icons.store,
-                  size: 14, color: Colors.grey,
+                  size: 14,
+                  color: Colors.grey,
                 ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     isDelivery ? address : 'Store pickup',
-                    style: const TextStyle(
-                        color: Colors.grey, fontSize: 12),
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -325,27 +361,30 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => OrderTrackingScreen(
-                      orderId: order['id'].toString()),
+                  builder: (_) =>
+                      OrderTrackingScreen(orderId: order['id'].toString()),
                 ),
               ),
               borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(16)),
+                bottom: Radius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                    vertical: 12, horizontal: 14),
+                  vertical: 12,
+                  horizontal: 14,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.location_on_outlined,
-                        size: 15, color: color),
+                    Icon(Icons.location_on_outlined, size: 15, color: color),
                     const SizedBox(width: 6),
                     Text(
                       'Track this order',
                       style: TextStyle(
-                          color: color,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600),
+                        color: color,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
