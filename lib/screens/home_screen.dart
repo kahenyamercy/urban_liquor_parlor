@@ -1,14 +1,13 @@
-// ignore_for_file: unused_import
-
 import 'package:flutter/material.dart';
 
 import '../config/supabase_config.dart';
-import '../models/product.dart';
 import 'login_screen.dart';
 import 'product_list_screen.dart';
 import '../services/cart_service.dart';
 import 'order_history_screen.dart';
 import 'cart_screen.dart';
+import '../models/category.dart';
+import 'sub_category_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,9 +17,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<String> _categories = [];
+  List<CategoryItem> _categories = [];
   bool _loading = true;
   String? _error;
+
 
   // Category icons — add more as needed
   final Map<String, IconData> _categoryIcons = {
@@ -29,8 +29,8 @@ class _HomeScreenState extends State<HomeScreen> {
     'Wine':     Icons.wine_bar,
     'Spirits':  Icons.liquor,
     'Cider':    Icons.emoji_food_beverage,
-    'Mixers':    Icons.water_drop,
-    'Non Alcoholic':     Icons.local_drink,
+    'Water':    Icons.water_drop,
+    'Soda':     Icons.local_drink,
   };
 
   // Category colors
@@ -40,8 +40,8 @@ class _HomeScreenState extends State<HomeScreen> {
     'Wine':     const Color(0xFF7C3AED),
     'Spirits':  const Color(0xFF0F766E),
     'Cider':    const Color(0xFF65A30D),
-    'Mixers':    const Color(0xFF0284C7),
-    'Non Alcoholic':     const Color(0xFFDB2777),
+    'Water':    const Color(0xFF0284C7),
+    'Soda':     const Color(0xFFDB2777),
   };
 
   @override
@@ -56,20 +56,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Fetch distinct categories from the products table
       final response = await supabase
-          .from('products')
-          .select('category')
-          .order('category');
+          .from('categories')
+          .select('id, name, image_url, parent_id')
+           .filter('parent_id', 'is', null)
+          .order('name');
 
-      // Extract unique categories from the response
-      final categories = response
-          .map<String>((row) => row['category'] as String)
-          .toSet()   // removes duplicates
-          .toList();
-
-      print('✅ Categories loaded: $categories');
-
-      setState(() {
-        _categories = categories;
+      final List<CategoryItem> loadedCategories = (response as List).map((row) {
+        return CategoryItem(
+          id: row['id'] as int,
+          name: row['name'] as String,
+          imageUrl: row['image_url'] ?? '',
+          parentId: row['parent_id'],
+        );
+      }).toList();
+      
+      print('✅ Categories loaded successfully.'); 
+       setState(() {
+        _categories = loadedCategories;
         _loading = false;
       });
     } catch (e) {
@@ -80,7 +83,8 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
   }
-
+        
+        
   Future<void> _signOut() async {
     await supabase.auth.signOut();
     if (mounted) {
@@ -289,30 +293,64 @@ Widget _buildHeader(String email) {
         ),
         itemCount: _categories.length,
         itemBuilder: (context, index) {
-          final category = _categories[index];
-          return _buildCategoryCard(category);
+          final categoryItem = _categories[index];
+          return _buildCategoryCard(categoryItem);
         },
       ),
     );
   }
 
-  Widget _buildCategoryCard(String category) {
-    final color = _categoryColors[category] ?? const Color(0xFF1A1A2E);
-    final icon  = _categoryIcons[category]  ?? Icons.local_bar;
+  Widget _buildCategoryCard(CategoryItem category) {
+    final color = _categoryColors[category.name] ?? const Color(0xFF1A1A2E);
+    final icon  = _categoryIcons[category.name]  ?? Icons.local_bar;
 
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
+         final children = await supabase
+          .from('categories')
+          .select('id, name, image_url, parent_id')
+          .eq('parent_id', category.id);
+          if (!mounted) return;
+
+        if ((children as List).isNotEmpty) {
+          Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SubCategoryScreen(
+              parentCategory: category,
+              subCategories: children.map((row) => CategoryItem(
+                id:       row['id'] as int,
+                name:     row['name'] as String,
+                imageUrl: row['image_url'] ?? '',
+                parentId: row['parent_id'],
+              )).toList(),
+            ),
+          ),
+        );
+      } else {
+
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ProductListScreen(category: category),
+            builder: (_) => ProductListScreen(category: category.name),
           ),
         );
+      }
       },
       child: Container(
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(16),
+          image: category.imageUrl.isNotEmpty
+              ?  DecorationImage(
+                  image: NetworkImage(category.imageUrl),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Colors.black.withValues(alpha: 0.45), // Scrim matrix overlay 
+                    BlendMode.darken,
+                  ),
+                )
+              : null,
+          color: category.imageUrl.isEmpty ? color : null,
         ),
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -331,7 +369,7 @@ Widget _buildHeader(String email) {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  category,
+                  category.name,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
