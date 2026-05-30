@@ -36,9 +36,7 @@ class AuthService {
         throw const AuthException('Signup failed. Please try again.');
       }
 
-      // 3. Create Profile Record
-      // Note: If this fails, the user is created but has no profile.
-      // Highly recommended to move this step to a Supabase DB Trigger instead!
+      
       await supabase.from('profiles').insert({
         'id': userId,
         'full_name': fullName,
@@ -53,9 +51,10 @@ class AuthService {
   }
 
   /// Signs in an existing user with email and password.
-  Future<void> signIn({required String email, required String password}) async {
+  Future<AuthResponse> signIn({required String email, required String password}) async {
     try {
-      await supabase.auth.signInWithPassword(email: email, password: password);
+      return await supabase.auth.signInWithPassword(
+        email: email, password: password);
     } on AuthException catch (e) {
       throw Exception(e.message);
     } catch (e) {
