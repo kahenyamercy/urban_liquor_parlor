@@ -14,14 +14,14 @@ class SubCategoryScreen extends StatelessWidget {
 
   final Map<String, IconData> _categoryIcons = const {
     'Vodka': Icons.local_bar,
-    'Rum':   Icons.sports_bar,
-    'Gin':   Icons.wine_bar,
+    'Rum': Icons.sports_bar,
+    'Gin': Icons.wine_bar,
   };
 
   final Map<String, Color> _categoryColors = const {
     'Vodka': Color(0xFF6366F1),
-    'Rum':   Color(0xFFB45309),
-    'Gin':   Color(0xFF059669),
+    'Rum': Color(0xFFB45309),
+    'Gin': Color(0xFF059669),
   };
 
   @override
@@ -45,7 +45,7 @@ class SubCategoryScreen extends StatelessWidget {
         itemBuilder: (context, index) {
           final cat = subCategories[index];
           final color = _categoryColors[cat.name] ?? const Color(0xFF1A1A2E);
-          final icon  = _categoryIcons[cat.name]  ?? Icons.local_bar;
+          final icon = _categoryIcons[cat.name] ?? Icons.local_bar;
 
           return GestureDetector(
             onTap: () => Navigator.push(
@@ -57,7 +57,17 @@ class SubCategoryScreen extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                color: color,
+                image: cat.imageUrl.isNotEmpty
+                    ? DecorationImage(
+                        image: NetworkImage(cat.imageUrl),
+                        fit: BoxFit.cover,
+                        colorFilter: ColorFilter.mode(
+                          Colors.black.withValues(alpha: 0.45),
+                          BlendMode.darken,
+                        ),
+                      )
+                    : null,
+                    color: cat.imageUrl.isEmpty ? color : null,                    
               ),
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -75,15 +85,21 @@ class SubCategoryScreen extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(cat.name,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
-                      Text('View all',
-                          style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 12)),
+                      Text(
+                        cat.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'View all',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                 ],
