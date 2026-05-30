@@ -297,25 +297,63 @@ class _ProductFormSheetState extends State<ProductFormSheet> {
   final _priceController    = TextEditingController();
   final _stockController    = TextEditingController();
   final _imageUrlController = TextEditingController();
-  String _category = 'Beer';
-  bool _saving = false;
-  bool _previewingImage = false;
-  String? _previewUrl;
 
-  final List<String> _categories = [
-    'Beer', 'Whiskey', 'Wine', 'Spirits', 'Cider', 'Water', 'Soda'
-  ];
+
+  List<String> _categories = [];
+    bool _loadingCategories = true;
+    String _category = '';
+
+    bool _saving = false;
+    bool _previewingImage = false;
+    String? _previewUrl;
+
+    Future<void> _loadCategories() async {
+  try {
+    final response = await supabase
+        .from('categories')
+        .select('name')
+        .order('name');
+
+    final List<String> names = (response as List)
+        .map((row) => row['name'] as String)
+        .toList();
+
+    setState(() {
+      _categories = names;
+      if (_category.isEmpty || !_categories.contains(_category)) {
+          _category = _categories.isNotEmpty ? _categories.first : '';
+        }
+      _loadingCategories = false;
+    });
+  } catch (e) {
+    print('❌ Error loading categories: $e');
+    // Fallback to hardcoded if fetch fails
+    setState(() {
+      _categories = [
+        'Beer', 'Cider', 'Gin', 'Rum', 'Soda', 
+        'Spirits', 'Vodka', 'Water', 'Whiskey', 'Wine'
+        ];
+        if (_category.isEmpty || !_categories.contains(_category)) {
+            _category = _categories.first;
+          }
+      _loadingCategories = false;
+    });
+  }
+}
+
 
   @override
   void initState() {
     super.initState();
+    
     if (widget.product != null) {
       final p = widget.product!;
       _nameController.text     = p.name;
       _priceController.text    = p.price.toStringAsFixed(0);
       _stockController.text    = p.stock.toString();
       _imageUrlController.text = p.imageUrl ?? '';
-      _category = _categories.contains(p.category) ? p.category : 'Beer';
+      _category = p.category;
+
       if (p.imageUrl != null && p.imageUrl!.isNotEmpty) {
         _previewUrl = p.imageUrl;
         _previewingImage = true;
@@ -323,6 +361,7 @@ class _ProductFormSheetState extends State<ProductFormSheet> {
     }
 
     // Live preview as admin types the URL
+   _loadCategories();
     _imageUrlController.addListener(_onUrlChanged);
   }
 
@@ -528,14 +567,35 @@ class _ProductFormSheetState extends State<ProductFormSheet> {
             _field(_nameController, 'Product name', TextInputType.text),
             const SizedBox(height: 12),
 
+            _loadingCategories
+                ? Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F8F8),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: const Center(
+                      child: SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ):
+
             DropdownButtonFormField<String>(
-              value: _category,
+              // ignore: deprecated_member_use
+              value:  _categories.contains(_category)
+                        ? _category
+                        : _categories.first,
               decoration: _inputDecoration('Category'),
               items: _categories
                   .map((c) =>
                       DropdownMenuItem(value: c, child: Text(c)))
                   .toList(),
-              onChanged: _saving ? null : (v) => setState(() => _category = v!),
+              onChanged: _saving ? null : (v) => 
+              setState(() => _category = v!),
             ),
             const SizedBox(height: 12),
 
